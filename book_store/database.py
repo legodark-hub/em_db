@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from models import Base
+from models.base import Base
 from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
 
 
