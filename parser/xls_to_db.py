@@ -1,42 +1,42 @@
 from datetime import datetime
 from database import engine
+from xls_truncate import xls_truncate
 import pandas
+
+SELELCTED_COLUMNS = [
+    "Код\nИнструмента",
+    "Наименование\nИнструмента",
+    "Базис\nпоставки",
+    "Объем\nДоговоров\nв единицах\nизмерения",
+    "Обьем\nДоговоров,\nруб.",
+    "Количество\nДоговоров,\nшт.",
+]
+COLUMNS_RENAME = {
+    "Код\nИнструмента": "exchange_product_id",
+    "Наименование\nИнструмента": "exchange_product_name",
+    "Базис\nпоставки": "delivery_basis_name",
+    "Объем\nДоговоров\nв единицах\nизмерения": "volume",
+    "Обьем\nДоговоров,\nруб.": "total",
+    "Количество\nДоговоров,\nшт.": "count",
+}
 
 
 def xls_to_db(path: str, date: datetime):
-    trades = pandas.read_excel(path)
-    # обрезка начала таблицы
-    marker = "Единица измерения: Метрическая тонна"
-    start_index = trades[trades["Форма СЭТ-БТ"] == marker].index[0]
-    trades = trades.iloc[start_index + 1 :].reset_index(drop=True)
-    trades.columns = trades.iloc[0]
-    trades = trades.drop([0, 1]).reset_index(drop=True)
-    # обрезка конца таблицы
-    end_index = trades[trades["Код\nИнструмента"] == "Итого:"].index[0]
-    trades = trades.iloc[:end_index]
-    trades = trades.drop(
-        trades[trades["Количество\nДоговоров,\nшт."] == "-"].index
-    ).reset_index(drop=True)
+    """
+    Saves the given Excel file to the database as a pandas DataFrame.
 
-    trades_selected = trades[
-        [
-            "Код\nИнструмента",
-            "Наименование\nИнструмента",
-            "Базис\nпоставки",
-            "Объем\nДоговоров\nв единицах\nизмерения",
-            "Обьем\nДоговоров,\nруб.",
-            "Количество\nДоговоров,\nшт.",
-        ]
-    ]
+    The file is truncated to the range of rows between MARKER_BEGIN and MARKER_END and columns specified by the first row.
+
+    The function is designed to work with Excel files downloaded from spimex.com.
+
+    :param path: The path to the Excel file
+    :param date: The date of the given Excel file
+    """
+    trades = pandas.read_excel(path)
+    truncated = xls_truncate(trades)
+    trades_selected = truncated[SELELCTED_COLUMNS]
     trades_selected = trades_selected.rename(
-        columns={
-            "Код\nИнструмента": "exchange_product_id",
-            "Наименование\nИнструмента": "exchange_product_name",
-            "Базис\nпоставки": "delivery_basis_name",
-            "Объем\nДоговоров\nв единицах\nизмерения": "volume",
-            "Обьем\nДоговоров,\nруб.": "total",
-            "Количество\nДоговоров,\nшт.": "count",
-        }
+        columns=COLUMNS_RENAME
     )
     trades_selected["oil_id"] = trades_selected["exchange_product_id"].str[:4]
     trades_selected["delivery_basis_id"] = trades_selected["exchange_product_id"].str[
