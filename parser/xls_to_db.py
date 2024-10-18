@@ -1,5 +1,5 @@
 from datetime import datetime
-from database import engine
+from database import get_async_session
 from xls_truncate import xls_truncate
 import pandas
 
@@ -21,7 +21,7 @@ COLUMNS_RENAME = {
 }
 
 
-def xls_to_db(path: str, date: datetime):
+async def xls_to_db(path: str, date: datetime):
     """
     Saves the given Excel file to the database as a pandas DataFrame.
 
@@ -45,11 +45,17 @@ def xls_to_db(path: str, date: datetime):
     trades_selected["delivery_type_id"] = trades_selected["exchange_product_id"].str[-1]
     trades_selected["date"] = date.date()
 
-    trades_selected.to_sql(
-        name="spimex_trading_results",
-        schema="oil_trades",
-        con=engine,
-        if_exists="append",
-        index=False,
-    )
+    async with get_async_session() as session:
+        conn = await session.connection()
+        await conn.run_sync(
+            lambda sync_conn: trades_selected.to_sql(
+                name="spimex_trading_results",
+                schema="oil_trades",
+                con=sync_conn,
+                if_exists="append",
+                index=False,
+            )
+        )
+        session.commit()
+
     print(f"в БД записаны данные за {date.date()}")

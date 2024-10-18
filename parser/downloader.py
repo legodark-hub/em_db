@@ -1,8 +1,10 @@
 from urllib import request, error
 import os
+import aiofiles
+import aiohttp
 
 
-def download_file(file_url, file_name, download_dir="downloaded_files"):
+async def download_file(file_url, file_name, download_dir="downloaded_files"):
     """
     Downloads a file from the given URL and saves it to the given directory.
 
@@ -12,14 +14,17 @@ def download_file(file_url, file_name, download_dir="downloaded_files"):
         download_dir (str): The directory to save the file to. Defaults to "downloaded_files".
     """
     try:
-        response = request.urlopen(file_url)
-        with open(os.path.join(download_dir, file_name), "wb") as file:
-            file.write(response.read())
-        print(f"Скачан: {file_name}")
-    except error.HTTPError as e:
-        if e.code == 404:
-            print(f"Файл не найден: {file_url}")
-        else:
-            print(f"Ошибка при скачивании файла: {e}")
-    except error.URLError as e:
-        print(f"Ошибка: {e}")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(file_url) as response:
+                if response.status == 200:
+                    async with aiofiles.open(os.path.join(download_dir, file_name), mode="wb") as file:
+                        await file.write(await response.read())
+                    print(f"Скачан: {file_name}")
+                    return f"{download_dir}/{file_name}"
+                else:
+                    print(f"Ошибка скачивания {file_url}, {response.status}")
+                    return None
+    except aiohttp.ClientError as e:
+        print(f"Ошибка скачивания: {e}")
+
+
