@@ -1,8 +1,10 @@
 from datetime import datetime
-from sqlalchemy import MetaData, DateTime, func
+from sqlalchemy import MetaData, DateTime, text
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+
+dt_now_utc_sql = text("TIMEZONE('utc', now())")
 
 
 class Base(DeclarativeBase):
@@ -23,8 +25,8 @@ class OilTrade(Base):
     count: Mapped[int]
     date: Mapped[datetime]
     created_on: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), nullable=False
+        DateTime, server_default=dt_now_utc_sql, nullable=False
     )
     updated_on: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+        DateTime, server_default=dt_now_utc_sql, onupdate=dt_now_utc_sql, nullable=False
     )
