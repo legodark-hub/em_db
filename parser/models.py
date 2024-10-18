@@ -20,9 +20,9 @@ class OilTrade(Base):
     delivery_basis_id: Mapped[str]
     delivery_basis_name: Mapped[str]
     delivery_type_id: Mapped[str]
-    volume: Mapped[int]
-    total: Mapped[int]
-    count: Mapped[int]
+    volume: Mapped[str]
+    total: Mapped[str]
+    count: Mapped[str]
     date: Mapped[datetime]
     created_on: Mapped[datetime] = mapped_column(
         DateTime, server_default=dt_now_utc_sql, nullable=False
