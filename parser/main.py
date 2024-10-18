@@ -10,16 +10,20 @@ BASE_URL = "https://spimex.com/upload/reports/oil_xls/oil_xls_"
 
 DOWNLOAD_DIR = "parser/xls_files"
 
-today = datetime.today()
-date_range = today - timedelta(days=30)
+
+async def download_to_db(file_url, file_name, DOWNLOAD_DIR, date):
+    await download_file(file_url, file_name, DOWNLOAD_DIR)
+    await xls_to_db(f"{DOWNLOAD_DIR}/{file_name}", date)
 
 
 async def main():
     tasks = []
-    
+    today = datetime.today()
+    date_range = today - timedelta(days=30)
+    current_date = date_range
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
     await create_db()
-    current_date = date_range
+
     while current_date < today:
         # пропуск выходных дней
         if current_date.weekday() >= 5:
@@ -30,13 +34,15 @@ async def main():
 
         file_url = f"{BASE_URL}{date_str}162000.xls"
         file_name = f"oil_xls_{date_str}.xls"
-        
-        download_task = await download_file(file_url, file_name, DOWNLOAD_DIR)
-        task = asyncio.create_task(xls_to_db(download_task, current_date))
+        task = asyncio.create_task(
+            download_to_db(file_url, file_name, DOWNLOAD_DIR, current_date)
+        )
         tasks.append(task)
-        
+
         current_date += timedelta(days=1)
+
     await asyncio.gather(*tasks)
+
 
 if __name__ == "__main__":
     start_time = time.perf_counter()
