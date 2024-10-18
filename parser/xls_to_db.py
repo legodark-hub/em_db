@@ -56,6 +56,6 @@ async def xls_to_db(path: str, date: datetime):
                 index=False,
             )
         )
-        session.commit()
+        await session.commit()
 
     print(f"в БД записаны данные за {date.date()}")
